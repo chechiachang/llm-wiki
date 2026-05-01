@@ -20,6 +20,8 @@ jobs:
   llm-verify:
     name: LLM Quality Verification
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout

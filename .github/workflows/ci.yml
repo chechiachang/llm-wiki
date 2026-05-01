@@ -10,6 +10,8 @@ jobs:
   structure-tests:
     name: Validate Wiki Structure
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout

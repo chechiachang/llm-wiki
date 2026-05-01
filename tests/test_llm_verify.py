@@ -58,8 +58,8 @@ def load_wiki_context(topic_keywords: list[str], max_chars: int = 4000) -> str:
             excerpt = content[:800].strip()
             rel_path = md_file.relative_to(REPO_ROOT)
             chunks.append(f"[{rel_path}]\n{excerpt}")
-        if sum(len(c) for c in chunks) > max_chars:
-            break
+            if sum(len(c) for c in chunks) > max_chars:
+                break
     return "\n\n---\n\n".join(chunks)
 
 
