@@ -1,0 +1,64 @@
+name: LLM Wiki Verification (Azure OpenAI)
+
+on:
+  # Run nightly at 02:00 UTC
+  schedule:
+    - cron: "0 2 * * *"
+  # Run on pushes to main
+  push:
+    branches:
+      - main
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      test_filter:
+        description: "pytest -k filter expression (leave blank for all)"
+        required: false
+        default: ""
+
+jobs:
+  llm-verify:
+    name: LLM Quality Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install pytest openai
+
+      - name: Run LLM verification tests
+        env:
+          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          AZURE_OPENAI_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
+        run: |
+          FILTER="${{ github.event.inputs.test_filter }}"
+          if [ -n "$FILTER" ]; then
+            pytest tests/test_llm_verify.py -v --tb=short -k "$FILTER"
+          else
+            pytest tests/test_llm_verify.py -v --tb=short
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: llm-verify-results
+          path: |
+            .pytest_cache/
+          retention-days: 7
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::LLM wiki verification failed. "
+          echo "::error::Wiki content may not adequately cover required topics, or Azure OpenAI secrets are not configured."
+          echo "::notice::Required secrets: AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DEPLOYMENT"
